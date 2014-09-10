@@ -1,0 +1,10 @@
+This folder contains libssh2 related files, primarily for use with Windows.
+These are currently for libssh2 version 1.4.3.
+
+Folders are:
+dll     - DLLs and import library (.lib) files for libssh2
+include - libssh2 header file (libssh2.h)
+
+
+PBT (Observatory Sciences Ltd)
+21 March 2013)

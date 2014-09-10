@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual C++ Express 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libPowerPMACcontrol_Shared", "libPowerPMACcontrol_Shared.vcxproj", "{D3039980-3826-4535-B995-BCC2BDEEDC77}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testPowerPMACcontrolLib", "testPowerPMACcontrolLib.vcxproj", "{6A21B075-950A-407F-A844-CD84C6DDDF6C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "powerPMACShell", "powerPMACShell.vcxproj", "{F5A2F9CC-711A-43AC-ADB6-5E94C14B695A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D3039980-3826-4535-B995-BCC2BDEEDC77}.Release|Win32.ActiveCfg = Release|Win32
+		{D3039980-3826-4535-B995-BCC2BDEEDC77}.Release|Win32.Build.0 = Release|Win32
+		{6A21B075-950A-407F-A844-CD84C6DDDF6C}.Release|Win32.ActiveCfg = Release|Win32
+		{6A21B075-950A-407F-A844-CD84C6DDDF6C}.Release|Win32.Build.0 = Release|Win32
+		{F5A2F9CC-711A-43AC-ADB6-5E94C14B695A}.Release|Win32.ActiveCfg = Release|Win32
+		{F5A2F9CC-711A-43AC-ADB6-5E94C14B695A}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

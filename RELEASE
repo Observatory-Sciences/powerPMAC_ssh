@@ -1,0 +1,21 @@
+Power PMAC SSH Communications Library Release Notes
+===================================================
+
+Author: Andrew Wilson(OSL)
+Date: September 10th 2014
+Release Type: Major
+Release Version Number: 1.0
+GitHub repository: https://github.com/aawosl/powerPMAC_ssh
+
+About 1.0
+=========
+
+This is the initial release of a communications software library written to monitor and control
+a Delta Tau Power PMAC over SSH. The library can be built and used under
+both Linux and Windows (Visual Studio C++) systems.
+
+Documentation
+=============
+Documentation and installation instructions can be found in docs/PowerPMAC_CommsLibrary_Manual.pdf
+
+_End of File_
