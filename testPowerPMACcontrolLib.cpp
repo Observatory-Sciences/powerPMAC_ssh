@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 using namespace std;
 #include "PowerPMACcontrol.h"
 
@@ -71,7 +72,12 @@ int main(int argc, char *argv[])
       cout << "14. abortMprog(int ncoord)"<< endl;
       cout << "15. sendCommand(const std::string command, std::string& reply)"<< endl;
       cout << "Please enter your selection (0 to exit) : ";
-      cin >> i;
+      
+      string str;
+      cin >> str;
+      i = -1;
+      sscanf(str.c_str(), "%d", &i);
+
       if (i == 0) break;
 
       switch(i)
@@ -291,6 +297,9 @@ int main(int argc, char *argv[])
                      }
                  break;
                }
+             default:
+             	cout << "Input value '" << str << "' was not recognised as a test case." << endl;
+             break;
              } /* end switch */
       cout << endl;
       cout << "Press ENTER only to continue>";
@@ -322,7 +331,7 @@ void testAxis()
     sleep(1);
   #endif 
   
-  while (i !=0)
+  while (i != 0)
   {
       printf( "\033[2J" );
       cout << "*** Select from the list below ***" << endl << endl << endl;
@@ -351,7 +360,12 @@ void testAxis()
       cout << "23. axisAbort(int axis)"<< endl;
       cout << "24. axisHome(int axis)"<< endl;
       cout << "Please enter your selection: (0 to exit) ";
-      cin >> i;
+       
+      string str;
+      cin >> str;
+      i = -1;
+      sscanf(str.c_str(), "%d", &i);
+      
       if (i == 0) break;
 
       switch(i)
@@ -786,6 +800,9 @@ void testAxis()
                    checkPMACerror(estatus);
                break;
                }
+         default:
+             	cout << "Input value '" << str << "' was not recognised as a test case." << endl;
+             break;
       } /* End switch */
       cout << endl;
       cout << "Press ENTER only to continue>";
