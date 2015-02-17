@@ -1,5 +1,5 @@
 #
-# Makefile to generate a powerPMACShell
+# Makefile to build the Power PMAC Communications library and test applications
 #
 
 CPP=g++
@@ -20,7 +20,7 @@ INSTALL_DIR=/usr/local
 	$(CPP) $(CXXFLAGS) -c $<;
 
 
-all: multi_thread_test powerPMACShell testPowerPMACcontrolLib libPowerPMACcontrol.a libPowerPMACcontrol.so
+all: multi_thread_test powerPMACShell testPowerPMACcontrolLib libPowerPMACcontrol.a libPowerPMACcontrol.so docs
 
 libPowerPMACcontrol.a: $(LIB_OBJS)
 	ar rcs libPowerPMACcontrol.a $(LIB_OBJS)
@@ -30,28 +30,29 @@ libPowerPMACcontrol.so: $(LIB_OBJS)
 	-o libPowerPMACcontrol.so -pthread \
 	$(LIB_OBJS)
 
-powerPMACShell: powerPMACShell.o libPowerPMACcontrol.a $(LIB_OBJS)
-	$(CPP) powerPMACShell.o -o powerPMACShell $(LFLAGS)
+powerPMACShell: powerPMACShell.o argParser.o libPowerPMACcontrol.a $(LIB_OBJS)
+	$(CPP) powerPMACShell.o argParser.o -o powerPMACShell $(LFLAGS)
 	
-testPowerPMACcontrolLib: testPowerPMACcontrolLib.o libPowerPMACcontrol.a $(LIB_OBJS)
-	$(CPP) testPowerPMACcontrolLib.o -o testPowerPMACcontrolLib $(LFLAGS)	
+testPowerPMACcontrolLib: testPowerPMACcontrolLib.o argParser.o libPowerPMACcontrol.a $(LIB_OBJS)
+	$(CPP) testPowerPMACcontrolLib.o argParser.o -o testPowerPMACcontrolLib $(LFLAGS)	
 	
 multi_thread_test: multi_thread_test.o libPowerPMACcontrol.a $(LIB_OBJS)
 	$(CPP) multi_thread_test.o -o multi_thread_test $(LFLAGS)
-	
 	
 release: $(wildcard *.h) $(wildcard *.cpp) Doxyfile
 	zip -r PowerPMACcontrol $(wildcard *.h) $(wildcard *.cpp) Doxyfile libssh2 msvc -x "*/.svn/*"
 	./makeReleaseTar
 
 install: $(wildcard *.h) libPowerPMACcontrol.a libPowerPMACcontrol.so
-	install -D -o root -g root -m 0644  $(wildcard *.h) $(INSTALL_DIR)/include
-	install -D -o root -g root -m 0644  libPowerPMACcontrol.a libPowerPMACcontrol.so $(INSTALL_DIR)/lib
+	install -D -m 0644  $(wildcard *.h) $(INSTALL_DIR)/include
+	install -D -m 0644  libPowerPMACcontrol.a libPowerPMACcontrol.so $(INSTALL_DIR)/lib
 
 clean:
-	/bin/rm -f *.o *.a *.so core powerPMACShell testPowerPMACcontrolLib *.zip *.tar.gz
+	/bin/rm -f *.o *.a *.so core powerPMACShell powerPMACShell2 multi_thread_test testPowerPMACcontrolLib *.zip *.tar.gz
+	/bin/rm -rf html
 
-
-
+.PHONY: docs
+docs:
+	doxygen Doxyfile
 
 
