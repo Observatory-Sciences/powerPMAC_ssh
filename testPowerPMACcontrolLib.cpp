@@ -2,23 +2,30 @@
 #include <string>
 using namespace std;
 #include "PowerPMACcontrol.h"
+#include "argParser.h"
 
-#define IPADDR "192.168.0.48"
-#define USER   "root"
-#define PASSW  "deltatau"
-
- void testController ();
- void testAxis();
- void printStringVec(const vector<std::string> & strvec);
- void checkPMACerror(int estatus);
- string StringToUpper(string strToConvert);
- void printStringVec(const vector<std::string> & strvec);
- void printUint64Vec(const vector<uint64_t> & ivec);
- void printDoubleVec(const vector<double> & dvec);
+void testController (const char * u_ipaddr, const char * u_user, const char * u_passw, const char * u_port, bool u_nominus2);
+void testAxis(const char * u_ipaddr, const char * u_user, const char * u_passw, const char * u_port, bool u_nominus2);
+void printStringVec(const vector<std::string> & strvec);
+void checkPMACerror(int estatus);
+string StringToUpper(string strToConvert);
+void printStringVec(const vector<std::string> & strvec);
+void printUint64Vec(const vector<uint64_t> & ivec);
+void printDoubleVec(const vector<double> & dvec);
 
 using namespace PowerPMACcontrol_ns;
 int main(int argc, char *argv[])
 {
+	// Get connection parameters from the command line arguments
+	// Default values are defined in argParser.h
+	argParser args(argc, argv);
+
+	std::string u_ipaddr 	= args.getIp();
+	std::string u_user 		= args.getUser();
+	std::string u_passw		= args.getPassw();
+	std::string u_port		= args.getPort();
+	bool 		u_nominus2	= args.getNominus2();
+
     int i = 0; 
   
   while (i < 1 || i > 2)
@@ -26,20 +33,21 @@ int main(int argc, char *argv[])
     cout << "Enter 1 for Controller functions, 2 for Axis functions" << endl;
     cin >> i;
   }
-  if (i ==1) testController();
-    else testAxis();
+  if (i ==1) testController(u_ipaddr.c_str(), u_user.c_str(), u_passw.c_str(), u_port.c_str(), u_nominus2);
+    else testAxis(u_ipaddr.c_str(), u_user.c_str(), u_passw.c_str(), u_port.c_str(), u_nominus2);
+
   
   return 0;
 }
 
-  void testController ()
+void testController (const char * u_ipaddr, const char * u_user, const char * u_passw, const char * u_port, bool u_nominus2)
   {
   int i, estatus;
   std::string reply, prompt;
   
   i = -1;
   PowerPMACcontrol *ppmaccomm = new PowerPMACcontrol();
-  estatus = ppmaccomm->PowerPMACcontrol_connect( IPADDR, USER , PASSW);
+  estatus = ppmaccomm->PowerPMACcontrol_connect( u_ipaddr, u_user , u_passw, u_port, u_nominus2);
   if (estatus != 0)
   {
     printf("Error connecting to power pmac. exit:\n");
@@ -71,6 +79,14 @@ int main(int argc, char *argv[])
       cout << "13. runMprog(int ncoord)"<< endl;
       cout << "14. abortMprog(int ncoord)"<< endl;
       cout << "15. sendCommand(const std::string command, std::string& reply)"<< endl;
+      cout << "" << endl;
+      cout << "16. getPhaseTaskUsage(double&)" << endl;
+      cout << "17. getServoTaskUsage(double&)" << endl;
+      cout << "18. getRtIntTaskUsage(double&)" << endl;
+      cout << "19. getBgTaskUsage(double&)" << endl;
+      cout << "20. getCPUUsage(double&)" << endl;
+      cout << "21. getCPUTemperature(double&)" << endl;
+      cout << "22. getRunningTime(double&)" << endl;
       cout << "Please enter your selection (0 to exit) : ";
       
       string str;
@@ -101,38 +117,125 @@ int main(int argc, char *argv[])
                }
          case 3:
                {
-               float varval;
-               std::string varnam;
+			   float varvalfloat;
+				  double varvaldouble;
+				  int varvalint;
+				  unsigned int varvaluint;
+				  std::string varvalstring;
+				  std::string varnam;
 
-               cout << "Input variable name: ";
-               cin >> varnam;
-               cout << endl;
-               estatus = ppmaccomm->PowerPMACcontrol_getVariable(varnam, varval);
-               if (estatus != PowerPMACcontrol::PPMACcontrolNoError)
-                   checkPMACerror(estatus);
-               else
-                   cout << "The value of " << varnam << " is: " << varval << endl;
-               break;
+				  cout << "Input variable name: ";
+				  cin >> varnam;
+				  cout << endl;
+				  estatus = ppmaccomm->PowerPMACcontrol_getVariable(varnam, varvalfloat);
+				  if (estatus != PowerPMACcontrol::PPMACcontrolNoError)
+					  checkPMACerror(estatus);
+				  else
+					  cout << "The (float) value of " << varnam << " is: " << varvalfloat << endl;
+
+				  estatus = ppmaccomm->PowerPMACcontrol_getVariable(varnam, varvaldouble);
+				  if (estatus != PowerPMACcontrol::PPMACcontrolNoError)
+				   checkPMACerror(estatus);
+				  else
+				   cout << "The (double) value of " << varnam << " is: " << varvaldouble << endl;
+
+				  estatus = ppmaccomm->PowerPMACcontrol_getVariable(varnam, varvalint);
+			   if (estatus != PowerPMACcontrol::PPMACcontrolNoError)
+				   checkPMACerror(estatus);
+			   else
+				   cout << "The (int) value of " << varnam << " is: " << varvalint << endl;
+
+			   estatus = ppmaccomm->PowerPMACcontrol_getVariable(varnam, varvaluint);
+			   			   if (estatus != PowerPMACcontrol::PPMACcontrolNoError)
+			   				   checkPMACerror(estatus);
+			   			   else
+			   				   cout << "The (uint) value of " << varnam << " is: " << varvalint << endl;
+
+			   estatus = ppmaccomm->PowerPMACcontrol_getVariable(varnam, varvalstring);
+			   if (estatus != PowerPMACcontrol::PPMACcontrolNoError)
+				   checkPMACerror(estatus);
+			   else
+				   cout << "The (string) value of " << varnam << " is: " << varvalstring << endl;
+			   break;
                }
          case 4:
                {
-               float varval;
+               float varvalfloat;
+               double varvaldouble;
+               int varvalint;
+               unsigned int varvaluint;
+               std::string varvalstring;
                std::string varnam;
 
                cout << "Input variable name: ";
                cin >> varnam;
                cout << endl;
+               enum {FLOAT=0, DOUBLE=1, INT=2, UINT=3, STRING=4};
+               int w = -1;
+               while (w <0 || w >4)
+               {
+            	   cout << "Choose data type to write: float=" << FLOAT << "; double=" << DOUBLE << "; int=" << INT << "; uint=" << UINT << "; string=" << STRING << endl;
+            	   cin >> w;
+               }
                cout << "Input new value: ";
-               cin >> varval;
-               cout << endl;
-               estatus = ppmaccomm->PowerPMACcontrol_setVariable(varnam, varval);
-               checkPMACerror(estatus);
-               estatus = ppmaccomm->PowerPMACcontrol_getVariable(varnam, varval);
-               if (estatus != PowerPMACcontrol::PPMACcontrolNoError)
+               switch (w){
+               case FLOAT:
+            	   cin >> varvalfloat;
+                   cout << endl;
+                   estatus = ppmaccomm->PowerPMACcontrol_setVariable(varnam, varvalfloat);
                    checkPMACerror(estatus);
-               else
-                   cout << "The value of " << varnam << " is now: " << varval << endl;
-
+                   estatus = ppmaccomm->PowerPMACcontrol_getVariable(varnam, varvalfloat);
+                   if (estatus != PowerPMACcontrol::PPMACcontrolNoError)
+					  checkPMACerror(estatus);
+				  else
+					  cout << "The value of " << varnam << " is now: " << varvalfloat << endl;
+            	   break;
+               case DOUBLE:
+            	   cin >> varvaldouble;
+                   cout << endl;
+                   estatus = ppmaccomm->PowerPMACcontrol_setVariable(varnam, varvaldouble);
+                   checkPMACerror(estatus);
+                   estatus = ppmaccomm->PowerPMACcontrol_getVariable(varnam, varvaldouble);
+                   if (estatus != PowerPMACcontrol::PPMACcontrolNoError)
+					  checkPMACerror(estatus);
+				  else
+					  cout << "The value of " << varnam << " is now: " << varvaldouble << endl;
+            	   break;
+               case INT:
+            	   cin >> varvalint;
+                   cout << endl;
+                   estatus = ppmaccomm->PowerPMACcontrol_setVariable(varnam, varvalint);
+                   checkPMACerror(estatus);
+                   estatus = ppmaccomm->PowerPMACcontrol_getVariable(varnam, varvalint);
+                   if (estatus != PowerPMACcontrol::PPMACcontrolNoError)
+					  checkPMACerror(estatus);
+				  else
+					  cout << "The value of " << varnam << " is now: " << varvalint << endl;
+            	   break;
+               case UINT:
+            	   cin >> varvaluint;
+                   cout << endl;
+                   estatus = ppmaccomm->PowerPMACcontrol_setVariable(varnam, varvaluint);
+                   checkPMACerror(estatus);
+                   estatus = ppmaccomm->PowerPMACcontrol_getVariable(varnam, varvaluint);
+                   if (estatus != PowerPMACcontrol::PPMACcontrolNoError)
+					  checkPMACerror(estatus);
+				  else
+					  cout << "The value of " << varnam << " is now: " << varvaluint << endl;
+            	   break;
+               case STRING:
+            	   cin >> varvalstring;
+                   cout << endl;
+                   estatus = ppmaccomm->PowerPMACcontrol_setVariable(varnam, varvalstring);
+                   checkPMACerror(estatus);
+                   estatus = ppmaccomm->PowerPMACcontrol_getVariable(varnam, varvalstring);
+                   if (estatus != PowerPMACcontrol::PPMACcontrolNoError)
+					  checkPMACerror(estatus);
+				  else
+					  cout << "The value of " << varnam << " is now: " << varvalstring << endl;
+            	   break;
+               }
+               cout << endl;
                break;
                }
          case 5:
@@ -297,6 +400,83 @@ int main(int argc, char *argv[])
                      }
                  break;
                }
+          	  case 16: /* getPhaseTaskUsage */
+          	  {
+          		  double d;
+          		estatus = ppmaccomm->PowerPMACcontrol_getPhaseTaskUsage(d);
+          		                 checkPMACerror(estatus);
+				 if (estatus == PowerPMACcontrol::PPMACcontrolNoError)
+					 {
+					 cout << "Phase task usage: " << d << "%" << endl;
+					 }
+          		  break;
+          	  }
+          	case 17: /* getServoTaskUsage */
+			  {
+				  double d;
+				estatus = ppmaccomm->PowerPMACcontrol_getServoTaskUsage(d);
+								 checkPMACerror(estatus);
+				 if (estatus == PowerPMACcontrol::PPMACcontrolNoError)
+					 {
+					 cout << "Servo task usage: " << d << "%" << endl;
+					 }
+				  break;
+			  }
+          	case 18:
+			  {
+				  double d;
+				estatus = ppmaccomm->PowerPMACcontrol_getRtIntTaskUsage(d);
+								 checkPMACerror(estatus);
+				 if (estatus == PowerPMACcontrol::PPMACcontrolNoError)
+					 {
+					 cout << "Real-time interrupt task usage: " << d << "%" << endl;
+					 }
+				  break;
+			  }
+          	case 19: /* getBgTaskUsage */
+			  {
+				  double d;
+				estatus = ppmaccomm->PowerPMACcontrol_getBgTaskUsage(d);
+								 checkPMACerror(estatus);
+				 if (estatus == PowerPMACcontrol::PPMACcontrolNoError)
+					 {
+					 cout << "Background task usage: " << d << "%" << endl;
+					 }
+				  break;
+			  }
+          	case 20: /* getCPUUsage */
+			  {
+				  double d;
+				estatus = ppmaccomm->PowerPMACcontrol_getCPUUsage(d);
+								 checkPMACerror(estatus);
+				 if (estatus == PowerPMACcontrol::PPMACcontrolNoError)
+					 {
+					 cout << "Total CPU usage by PMAC tasks: " << d << "%" << endl;
+					 }
+				  break;
+			  }
+          	case 21: /* getCPUTemperature */
+			  {
+				  double d;
+				estatus = ppmaccomm->PowerPMACcontrol_getCPUTemperature(d);
+								 checkPMACerror(estatus);
+				 if (estatus == PowerPMACcontrol::PPMACcontrolNoError)
+					 {
+					 cout << "CPU temperature: " << d << " degrees C" << endl;
+					 }
+				  break;
+			  }
+          	case 22: /* getRunningTime */
+			  {
+				  double d;
+				estatus = ppmaccomm->PowerPMACcontrol_getRunningTime(d);
+								 checkPMACerror(estatus);
+				 if (estatus == PowerPMACcontrol::PPMACcontrolNoError)
+					 {
+					 cout << "Running time: " << d << " seconds" << endl;
+					 }
+				  break;
+			  }
              default:
              	cout << "Input value '" << str << "' was not recognised as a test case." << endl;
              break;
@@ -313,13 +493,13 @@ int main(int argc, char *argv[])
     return;
 }  /* end testController() */
   
-void testAxis()
+void testAxis(const char * u_ipaddr, const char * u_user, const char * u_passw, const char * u_port, bool u_nominus2)
 {
   int i, estatus;
   
   i = -1;
   PowerPMACcontrol *ppmaccomm = new PowerPMACcontrol();
-  estatus = ppmaccomm->PowerPMACcontrol_connect( IPADDR, USER , PASSW);
+  estatus = ppmaccomm->PowerPMACcontrol_connect( u_ipaddr, u_user , u_passw, u_port, u_nominus2);
   if (estatus != 0)
   {
     printf("Error connecting to power pmac. exit:\n");

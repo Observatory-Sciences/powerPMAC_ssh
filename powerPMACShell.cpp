@@ -1,24 +1,32 @@
 #include "libssh2Driver.h"
 #include "PowerPMACcontrol.h"
 #include <iostream>
-
-#define IPADDR "192.168.0.48"
-#define USER   "root"
-#define PASSW  "deltatau"
+#include <string>
+#include "argParser.h"
 
 using namespace PowerPMACcontrol_ns;
 int main(int argc, char *argv[])
 {
+	// Get connection parameters from the command line arguments
+	// Default values are defined in argParser.h
+	argParser args(argc, argv);
+
+	std::string u_ipaddr 	= args.getIp();
+	std::string u_user 		= args.getUser();
+	std::string u_passw		= args.getPassw();
+	std::string u_port		= args.getPort();
+	bool 		u_nominus2	= args.getNominus2();
+
     PowerPMACcontrol *ppmaccomm = new PowerPMACcontrol();
-    int ret = ppmaccomm->PowerPMACcontrol_connect(IPADDR, USER , PASSW);
+    int ret = ppmaccomm->PowerPMACcontrol_connect(u_ipaddr.c_str(), u_user.c_str() , u_passw.c_str(), u_port.c_str(), u_nominus2);
     
     if (ret != 0)
     {
-      printf("Error connecting to power pmac  at %s. exit:\n", IPADDR);
+      printf("Error connecting to power pmac  at %s. exit:\n", u_ipaddr.c_str());
       return 0;
     }
     else
-      printf("Connected to Power PMAC OK at %s\n", IPADDR);
+      printf("Connected to Power PMAC OK at %s\n", u_ipaddr.c_str());
     
     
 #ifdef WIN32

@@ -1,14 +1,46 @@
 Power PMAC SSH Communications Library Release Notes
 ===================================================
 
+Release 1.1
+===========
+
+Author: Andrew Wilson (OSL)
+Date: February 17th 2015
+Release Type: Minor
+Release Version Number: 1.1
+GitHub repository: https://github.com/aawosl/powerPMAC_ssh
+
+-   Add support for "-2" argument when running communications application "gpascii"
+
+-   PowerPMACcontrol_setVariable and PowerPMACcontrol_getVariable now support data types
+    float, double, int, unsigned int, std::string.
+    
+-   Add new library functions:
+
+        PowerPMACcontrol_getCPUTemperature (double &temperature)
+        PowerPMACcontrol_getCPUUsage (double &CPUUsage)
+        PowerPMACcontrol_getRunningTime (double &runningTime)PowerPMACcontrol_getRunningTime
+        PowerPMACcontrol_getPhaseTaskUsage (double &phaseTaskUsage)
+        PowerPMACcontrol_getServoTaskUsage (double &servoTaskUsage)
+        PowerPMACcontrol_getRtIntTaskUsage (double &rtIntTaskUsage)
+        PowerPMACcontrol_getBgTaskUsage (double &bgTaskUsage)
+    
+-   Test applications now accept command line arguments for connection parameters:
+
+        -ip         IP address
+        -port       SSH port
+        -user       Power PMAC login username
+        -passw      Power PMAC login password
+        -nominus2   Disable use of "-2" argument for "gpascii" command
+
+Release 1.0
+===========
+
 Author: Andrew Wilson (OSL)
 Date: September 10th 2014
 Release Type: Major
 Release Version Number: 1.0
 GitHub repository: https://github.com/aawosl/powerPMAC_ssh
-
-About 1.0
-=========
 
 This is the initial release of a communications software library written to monitor and control
 a Delta Tau Power PMAC over SSH. The library can be built and used under

@@ -9,7 +9,7 @@
 
 /** 
  * @file PowerPMACcontrol.h
- * @brief Header file for the PowerPMACcontrol class 
+ * @brief Header file for the PowerPMACcontrol_ns::PowerPMACcontrol class
  * 
  * This file contains declaration of the PowerPMACcontrol class, 
  * its functions and member variables. Integer values for error codes 
@@ -25,6 +25,7 @@
 #include <string>
 #include "libssh2Driver.h"
 #include <vector>
+#include <sstream>
 
 /* Some versions of MS Visual Studio don't have stdint.h,
    so define uint32_t and uint64_t here */
@@ -43,17 +44,26 @@ typedef unsigned __int64 uint64_t;
 #endif
 
 
-/* Windows DLL: Declaration for methods to be exported */ 
+/** Windows DLL: Declaration for methods to be exported */
 #ifdef DLL_CONFIG
 #define DLLDECL __declspec(dllexport)
 #else
 #define DLLDECL
 #endif
 
+/** Uncomment this to get debugging output */
+//#define DEBUG_PowerPMACcontrol
+#ifdef DEBUG_PowerPMACcontrol
+/** Enable debugging output */
+#define debugPrint_ppmaccomm printf
+#else
+inline void debugPrint_ppmaccomm(...){}
+#endif
+
 namespace PowerPMACcontrol_ns
 {
 
-/*
+/**
  * Remove trailing delimiters from the string and returns it.
  * param s - String to be trimmed.
  * param delimiters - List of delimiters to be removed from the string. 
@@ -71,6 +81,7 @@ inline std::string trim_right_copy(
 }
 
 #ifndef WIN32
+/** Get absolute time at the specified number of miliseconds in the future */
 inline struct timespec getAbsTimeout( long milliseconds)
 {
     struct timespec ts;
@@ -118,7 +129,7 @@ public:
     DLLDECL PowerPMACcontrol();
     DLLDECL virtual ~PowerPMACcontrol();
     
-   DLLDECL int PowerPMACcontrol_connect(const char *host, const char *user, const char *pwd, const char *port="22");
+   DLLDECL int PowerPMACcontrol_connect(const char *host, const char *user, const char *pwd, const char *port="22", const bool nominus2 = false);
    DLLDECL int PowerPMACcontrol_disconnect();
    DLLDECL bool PowerPMACcontrol_isConnected();
    DLLDECL int PowerPMACcontrol_sendCommand(const std::string command, std::string& reply);
@@ -128,8 +139,6 @@ public:
    DLLDECL int PowerPMACcontrol_getVers(std::string &vers);
    DLLDECL int PowerPMACcontrol_getGlobalStatus(uint32_t& status);
    DLLDECL int PowerPMACcontrol_getProgNames(int& num, std::vector<std::string>& names);
-   DLLDECL int PowerPMACcontrol_getVariable(const std::string name, float& value);
-   DLLDECL int PowerPMACcontrol_setVariable(const std::string name, float value);
    DLLDECL int PowerPMACcontrol_enablePlc(int plcnum);
    DLLDECL int PowerPMACcontrol_disablePlc(int plcnum);
    DLLDECL int PowerPMACcontrol_plcState(int plcnum, bool& active, bool& running);
@@ -139,7 +148,15 @@ public:
    DLLDECL int PowerPMACcontrol_reset();
    DLLDECL int PowerPMACcontrol_stopAllAxes();
    DLLDECL int PowerPMACcontrol_progDownload(std::string filepath);
-    
+   DLLDECL int PowerPMACcontrol_getCPUTemperature(double& temperature);
+   DLLDECL int PowerPMACcontrol_getRunningTime(double& runningTime);
+   DLLDECL int PowerPMACcontrol_getCPUUsage(double& CPUUsage);
+   DLLDECL int PowerPMACcontrol_getPhaseTaskUsage(double& phaseTaskUsage);
+   DLLDECL int PowerPMACcontrol_getServoTaskUsage(double& servoTaskUsage);
+   DLLDECL int PowerPMACcontrol_getRtIntTaskUsage(double& rtIntTaskUsage);
+   DLLDECL int PowerPMACcontrol_getBgTaskUsage(double& bgTaskUsage);
+
+
     //Axis oriented functions
    DLLDECL int PowerPMACcontrol_getMotorStatus(int motor, uint64_t& status);
    DLLDECL int PowerPMACcontrol_getMultiMotorStatus(int firstMotor, int lastMotor, std::vector<uint64_t>& status);
@@ -166,6 +183,111 @@ public:
    DLLDECL int PowerPMACcontrol_axisAbort(int axis);
    DLLDECL int PowerPMACcontrol_axisHome(int axis);
     
+   	   // Template methods
+   	   /**
+       * @brief Get variable value.
+       *
+       * This is a template method: the type of 'value' can be float, double, int, unsigned int or std::string.
+       *
+       * If 'inf' or 'nan' is received from the Power PMAC,
+       * this function will return PPMACcontrolPMACUnexpectedReplyError (-231) and
+       * the value parameter will not be set. \n
+       * Power PMAC command string sent = "<name>"
+       *
+       * @param name - Variable name
+       * @param value - Value of the variable - reference to float, double, int or std::string
+       * @return If variable is successfully received,
+       * PPMACcontrolNoError(0) is returned. If not,
+       * minus value is returned. Possible error codes are :
+       *      - PPMACcontrolNoError(0)
+       *      - Error reported from Power PMAC (-1 to -99) -1*(Power PMAC error number)
+       *      - PPMACcontrolNoSSHDriverSet (-230)
+       *      - PPMACcontrolSSHDriverError (-102)
+       *      - PPMACcontrolSSHDriverErrorNoconn (-104)
+       *      - PPMACcontrolSSHDriverErrorNobytes (-103)
+       *      - PPMACcontrolSSHDriverErrorReadTimeout (-112)
+       *      - PPMACcontrolSSHDriverErrorWriteTimeout (-113)
+       *      - PPMACcontrolPMACUnexpectedReplyError (-231)
+       *      - PPMACcontrolUnexpectedParamError (-238)
+       *      - PPMACcontrolSemaphoreTimeoutError = (-239)
+       *      - PPMACcontrolSemaphoreError = (-240)
+       *      - PPMACcontrolSemaphoreReleaseError = (-241)
+       *
+       */
+      template <typename T> int PowerPMACcontrol_getVariable(const std::string name, T& value){
+   	   static const char *functionName = "PowerPMACcontrol::PowerPMACcontrol_getVariable";
+   	   debugPrint_ppmaccomm("%s called ", functionName);
+
+   	   // Check variable name is valid
+   	   if (name.length() < 1)
+   		   return PPMACcontrolUnexpectedParamError;
+
+   	   // Build the buffer to send
+   	   char cmd[SEND_BUFFER_LENGTH] = "";
+   	   this->buildSendBuffer(cmd, name);
+
+   	   // Send command and read reply
+   	   std::string reply;
+   	   int ret = this->writeRead(cmd,reply);
+   	   if (ret != PPMACcontrolNoError)
+   		   return ret;
+
+   	   // Convert result to desired type
+   	   std::istringstream stream(reply);
+   	   T rval;
+   	   stream >> rval;
+   	   if (stream.fail())
+   	   {
+   		   // Failed to convert to desired type -
+   		   //    Returns this error when the stream is empty
+   		   //    or contains a reply not in the expected format
+   		   return PPMACcontrolPMACUnexpectedReplyError;
+   	   }
+   	   value = rval;
+   	   return PPMACcontrolNoError;
+      };
+
+      /**
+       * @brief Write global internal variable
+       *
+       * This is a template method: the type of 'value' can be float, double, int, unsigned int or std::string.
+       *
+       * Power PMAC command string sent = "<name>=<new value>"
+       *
+       * @param name - Name of the variable
+       * @param value - Value to be set to the variable - value may be type float, double, int or std::string
+       * @return If the new value to the variable is set successfully,
+       * PPMACcontrolNoError(0) is returned. If not,
+       * minus value is returned. Possible error codes are :
+       *      - PPMACcontrolNoError(0)
+       *      - Error reported from Power PMAC (-1 to -99) -1*(Power PMAC error number)
+       *      - PPMACcontrolNoSSHDriverSet (-230)
+       *      - PPMACcontrolSSHDriverError (-102)
+       *      - PPMACcontrolSSHDriverErrorNoconn (-104)
+       *      - PPMACcontrolSSHDriverErrorNobytes (-103)
+       *      - PPMACcontrolSSHDriverErrorReadTimeout (-112)
+       *      - PPMACcontrolSSHDriverErrorWriteTimeout (-113)
+       *      - PPMACcontrolUnexpectedParamError (-238)
+       *      - PPMACcontrolSemaphoreTimeoutError = (-239)
+       *      - PPMACcontrolSemaphoreError = (-240)
+       *      - PPMACcontrolSemaphoreReleaseError = (-241)
+       */
+      template <typename T> int PowerPMACcontrol_setVariable(const std::string name, T value){
+   	   static const char *functionName = "PowerPMACcontrol::PowerPMACcontrol_setVariable";
+   	   debugPrint_ppmaccomm("%s called ", functionName);
+
+   	   	   // Check variable name is valid
+   	   	   if (name.length() < 1)
+   	           return PPMACcontrolUnexpectedParamError;
+
+   	   	   // Build the buffer to send
+   	   	   char cmd[SEND_BUFFER_LENGTH] = {0};
+   	       this->buildSendBuffer(cmd, name, value);
+
+   	       // Send command and read reply
+   	       return this->writeRead(cmd);
+      };
+
     
     DLLDECL static const int  PPMACcontrolNoError = 0;                         ///< No error 
     //-1 to -99 are reserved for PMAC error
@@ -211,13 +333,79 @@ private:
     
     int PowerPMACcontrol_write(const char *buffer, size_t bufferSize, size_t *bytesWritten, int timeout);
     int PowerPMACcontrol_read(char *buffer, size_t bufferSize, size_t *bytesRead, int readTerm, int timeout);
-    int writeRead(const char *cmd, int timeout = 1000);
-    int writeRead(const char *cmd, std::string& response, int timeout = 1000);
-	int writeRead_WithoutSemaphore(const char *cmd, std::string& response, int timeout = 1000);
-    
+
+    // These methods included in the DLL because they are used in the template methods
+    // getVariable and setVarible, which are inserted inline by the compiler where they are used
+    DLLDECL int writeRead(const char *cmd, int timeout = 1000);
+    DLLDECL int writeRead(const char *cmd, std::string& response, int timeout = 1000);
+
+
+    int writeRead_WithoutSemaphore(const char *cmd, std::string& response, int timeout = 1000);
+
     static const long SEMAPHORE_WAIT_MSEC = 200L;
     static const int MAX_ITEM_NUM = 32;
     
+    static const int SEND_BUFFER_LENGTH = 128;
+
+    inline static int buildSendBuffer(char * buffer, std::string name)
+    {
+    	return sprintf( buffer, "%s\n", name.c_str());
+    }
+    inline static int buildSendBuffer(char * buffer, std::string name, float value)
+    {
+    	return sprintf( buffer, "%s=%f\n", name.c_str(), value);
+    }
+    inline static int buildSendBuffer(char * buffer, std::string name, double value)
+    {
+    	return sprintf( buffer, "%s=%f\n", name.c_str(), value);
+    }
+    inline static int buildSendBuffer(char * buffer, std::string name, int value)
+    {
+    	return sprintf( buffer, "%s=%d\n", name.c_str(), value);
+    }
+    inline static int buildSendBuffer(char * buffer, std::string name, unsigned int value)
+	{
+		return sprintf( buffer, "%s=%d\n", name.c_str(), value);
+	}
+    inline static int buildSendBuffer(char * buffer, std::string name, std::string value)
+    {
+    	return sprintf( buffer, "%s=%s\n", name.c_str(), value.c_str());
+    }
+
+    /**
+     * Handle calculation of CPU usage by different PMAC tasks
+     * Calculations adapted from source code for Power PMAC IDE Task Manager, provided by Delta Tau
+     */
+    class TaskCalculator{
+    public:
+    	TaskCalculator(PowerPMACcontrol *);
+    	inline double getPhaseTaskUsage()	{return phaseTaskUsage;};
+    	inline double getServoTaskUsage()	{return servoTaskUsage;};
+    	inline double getRtIntTaskUsage()	{return rtIntTaskUsage;};
+    	inline double getBgTaskUsage()		{return bgTaskUsage;};
+    	inline double getCPUUsageByPmacTasks()	{return CPUUsageByPmacTasks;};
+    	inline int getErrorStatus()			{return errorStatus;};
+
+    private:
+    	PowerPMACcontrol * myParent;
+
+        double Sys_FltrPhaseTime, Sys_FltrRtIntTime, Sys_FltrServoTime, Sys_FltrBgTime, Sys_BgSleepTime;
+        double Sys_PhaseDeltaTime, Sys_ServoDeltaTime, Sys_RtIntDeltaTime, Sys_BgDeltaTime;
+        double phaseTaskTime_usec, servoTaskTime_usec, rtIntTaskTime_usec, bgTaskTime_usec;
+        double last_positive_servoTaskTime;
+        double last_positive_rtIntTaskTime;
+
+        // Hold results
+    	double phaseTaskUsage;
+    	double servoTaskUsage;
+    	double rtIntTaskUsage;
+    	double bgTaskUsage;
+    	double CPUUsageByPmacTasks;
+
+    	int errorStatus;
+
+    };
+
 #ifdef WIN32
 	HANDLE ghSemaphore;
 #else

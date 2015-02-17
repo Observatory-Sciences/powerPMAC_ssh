@@ -55,9 +55,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\argParser.cpp" />
     <ClCompile Include="..\..\testPowerPMACcontrolLib.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\argParser.h" />
     <ClInclude Include="..\..\PowerPMACcontrol.h" />
   </ItemGroup>
   <ItemGroup>

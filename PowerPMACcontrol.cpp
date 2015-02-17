@@ -18,7 +18,7 @@
 
 /** 
  * @file PowerPMACcontrol.cpp
- * @brief C++ source file for the PowerPMACcontrol class. This file implements the class and its functions. 
+ * @brief C++ source file for the PowerPMACcontrol_ns::PowerPMACcontrol class. This file implements the class and its functions.
  *  
  * The PowerPMACcontrol class manages the communication with Power PMAC. 
  * To connect to the Power PMAC, call PowerPMACcontrol_connect function with
@@ -27,19 +27,11 @@
 
 
 
-#include <sstream>
+//#include <sstream>
 #include <fstream>
 #include "PowerPMACcontrol.h"
 #ifndef WIN32
 #include <errno.h>
-#endif
-
-/* Uncomment next line to get debugging output */
-//#define DEBUG_PowerPMACcontrol
-#ifdef DEBUG_PowerPMACcontrol
-#define debugPrint_ppmaccomm printf
-#else
-void debugPrint_ppmaccomm(...){}
 #endif
 
 namespace PowerPMACcontrol_ns
@@ -101,6 +93,10 @@ PowerPMACcontrol::PowerPMACcontrol(){
  * @param host - Host name/IP address of the Power PMAC
  * @param user - User name for the SSH connection 
  * @param pwd - Password for the SSH connection 
+ * @param port - Port number for the SSH connection (default 22)
+ * @param nominus2 - If true, remove the '-2' option on the command sent to start gpascii:
+ * 					'gpascii -2' (nominus2 = false, default),
+ * 					'gpascii' (nominus2 = true).
  * @return If successful, PPMACcontrolNoError(0) is returned. If not, 
  * minus value is returned. Possible error codes are :
  *      - PPMACcontrolNoError(0)
@@ -124,8 +120,8 @@ PowerPMACcontrol::PowerPMACcontrol(){
  *      .
  */
 int PowerPMACcontrol::PowerPMACcontrol_connect(const char *host, const char *user, 
-                                                        const char *pwd, const char *port){
-    static const char *functionName = "PowerPMACcontrol::powerpmac_connect";
+                                                        const char *pwd, const char *port, const bool nominus2){
+    static const char *functionName = "PowerPMACcontrol::PowerPMACcontrol_connect";
     
     if (strlen(host) > 255)
     {
@@ -234,22 +230,32 @@ int PowerPMACcontrol::PowerPMACcontrol_connect(const char *host, const char *use
                         //Start the gpascii program on the powerPmac
                         char buff[512] = "";
                         size_t bytes = 0;
-                        strcpy(buff, "gpascii\n");
-                        debugPrint_ppmaccomm("%s : Writing 'gpascii' to the powerpmac\n", functionName);
+                        if (nominus2)
+                        {
+                        	// don't use the -2 option
+                        	strcpy(buff, "gpascii\n");
+                        }
+                        else
+                        {
+                        	// use the -2 option
+                        	strcpy(buff, "gpascii -2\n");
+                        }
+
+                        debugPrint_ppmaccomm("%s : Writing '%s' to the powerpmac\n", functionName, buff);
                         int ret2 = this->PowerPMACcontrol_write(buff, strlen(buff), &bytes, 1000);
 
                         if (ret2 != PPMACcontrolNoError)
                         {
-                          debugPrint_ppmaccomm("%s : Error while writing 'gpascii' to the powerpmac\n", functionName);
+                          debugPrint_ppmaccomm("%s : Error while writing 'gpascii -2' to the powerpmac\n", functionName);
                           return_val = ret2;
                         }
                         else
                         {
-                            debugPrint_ppmaccomm("%s : Reading reply to 'gpascii' from the powerpmac\n", functionName);
+                            debugPrint_ppmaccomm("%s : Reading reply to 'gpascii -2' from the powerpmac\n", functionName);
                             ret2 = this->PowerPMACcontrol_read(buff, 512, &bytes, '\n', 2000);
                             if (ret2 != PPMACcontrolNoError)
                             {
-                              debugPrint_ppmaccomm("%s : Error while reading reply to 'gpascii' command from the powerpmac\n", functionName);
+                              debugPrint_ppmaccomm("%s : Error while reading reply to 'gpascii -2' command from the powerpmac\n", functionName);
                               return_val = ret2;
                             }
                             else
@@ -357,7 +363,7 @@ int PowerPMACcontrol::PowerPMACcontrol_disconnect(){
 /**
  * @brief Check if the class already has a SSH connection.
  * 
- * @return If it is already has a SSH connection established, it will return true. Otherwise, false. 
+ * @return If it already has a SSH connection established, it will return true. Otherwise, false.
  */
 bool PowerPMACcontrol::PowerPMACcontrol_isConnected(){
     if (this->connected > 0)
@@ -926,7 +932,7 @@ int PowerPMACcontrol::PowerPMACcontrol_axisSetDeadband(int axis, double deadband
 }
 
 /**
- * @brief Get software of an axis.
+ * @brief Get software limits of an axis.
  * 
  * If 'inf' or 'nan' is received from the Power PMAC, 
  * this function will return PPMACcontrolPMACUnexpectedReplyError (-231) and 
@@ -1027,93 +1033,6 @@ int PowerPMACcontrol::PowerPMACcontrol_axisSetSoftwareLimits(int axis, double ma
     return writeRead(cmd);
 }
 
-/**
- * @brief Write global internal variable
- * 
- * Power PMAC command string sent = "<name>=<new value>"
- *
- * @param name - Name of the variable
- * @param value - Value to be set to the variable
- * @return If the new value to the variable is set successfully, 
- * PPMACcontrolNoError(0) is returned. If not, 
- * minus value is returned. Possible error codes are :
- *      - PPMACcontrolNoError(0)
- *      - Error reported from Power PMAC (-1 to -99) -1*(Power PMAC error number)
- *      - PPMACcontrolNoSSHDriverSet (-230)
- *      - PPMACcontrolSSHDriverError (-102)
- *      - PPMACcontrolSSHDriverErrorNoconn (-104)
- *      - PPMACcontrolSSHDriverErrorNobytes (-103)
- *      - PPMACcontrolSSHDriverErrorReadTimeout (-112)
- *      - PPMACcontrolSSHDriverErrorWriteTimeout (-113) 
- *      - PPMACcontrolUnexpectedParamError (-238)
- *      - PPMACcontrolSemaphoreTimeoutError = (-239)
- *      - PPMACcontrolSemaphoreError = (-240)
- *      - PPMACcontrolSemaphoreReleaseError = (-241)
- */
-int PowerPMACcontrol::PowerPMACcontrol_setVariable(const std::string name, float value){
-    static const char *functionName = "PowerPMACcontrol::PowerPMACcontrol_setVariable";
-    if (name.length() < 1)
-        return PPMACcontrolUnexpectedParamError;
-    debugPrint_ppmaccomm("%s called", functionName);
-    char cmd[128] = {0};
-    sprintf( cmd, "%s=%f\n", name.c_str(), value);
-  
-    return writeRead(cmd);
-}
-
-/**
- * @brief Get variable value.
- * 
- * If 'inf' or 'nan' is received from the Power PMAC, 
- * this function will return PPMACcontrolPMACUnexpectedReplyError (-231) and 
- * the value parameter will not be set. \n
- * Power PMAC command string sent = "<name>"
- *
- * @param name - Variable name
- * @param value - Value of the variable
- * @return If variable is successfully received, 
- * PPMACcontrolNoError(0) is returned. If not, 
- * minus value is returned. Possible error codes are :
- *      - PPMACcontrolNoError(0)
- *      - Error reported from Power PMAC (-1 to -99) -1*(Power PMAC error number)
- *      - PPMACcontrolNoSSHDriverSet (-230)
- *      - PPMACcontrolSSHDriverError (-102)
- *      - PPMACcontrolSSHDriverErrorNoconn (-104)
- *      - PPMACcontrolSSHDriverErrorNobytes (-103)
- *      - PPMACcontrolSSHDriverErrorReadTimeout (-112)
- *      - PPMACcontrolSSHDriverErrorWriteTimeout (-113) 
- *      - PPMACcontrolPMACUnexpectedReplyError (-231)
- *      - PPMACcontrolUnexpectedParamError (-238)
- *      - PPMACcontrolSemaphoreTimeoutError = (-239)
- *      - PPMACcontrolSemaphoreError = (-240)
- *      - PPMACcontrolSemaphoreReleaseError = (-241)
- */
-int PowerPMACcontrol::PowerPMACcontrol_getVariable(const std::string name, float& value){
-    static const char *functionName = "PowerPMACcontrol::PowerPMACcontrol_getVariable";
-    debugPrint_ppmaccomm("%s called", functionName);
-    
-    if (name.length() < 1)
-        return PPMACcontrolUnexpectedParamError;
-
-    char cmd[128] = "";
-    sprintf( cmd, "%s\n", name.c_str());
-    
-    std::string reply;
-    int ret = this->writeRead(cmd,reply);
-    if (ret != PPMACcontrolNoError)
-        return ret;
-
-    std::istringstream stream(reply);
-    float fval;
-    stream >> fval;
-    if (stream.fail())
-    {
-        //failed to convert to double value
-        return PPMACcontrolPMACUnexpectedReplyError;
-    }
-    value = fval;
-    return PPMACcontrolNoError;
-}
 
 /**
  * @brief Get current position of an axis.
@@ -2730,6 +2649,344 @@ int PowerPMACcontrol::splitit(std::string s, std::string separator, std::vector<
         return PPMACcontrolSplitterError;
     }
     return PPMACcontrolNoError;
+}
+
+/**
+ * @brief Get the current CPU operational temperature
+ *
+ * Power PMAC command string sent = "Sys.CpuTemp"
+ * @param temperature - The temperature in Celsius will be written to this parameter
+ * @return If temperature is successfully received, PPMACcontrolNoError(0) is returned. If not,
+ * minus value is returned. Possible error codes are :
+ *      - PPMACcontrolNoError(0)
+ *      - PPMACcontrolNoSSHDriverSet (-230)
+ *      - PPMACcontrolSSHDriverError (-102)
+ *      - PPMACcontrolSSHDriverErrorNoconn (-104)
+ *      - PPMACcontrolSSHDriverErrorNobytes (-103)
+ *      - PPMACcontrolSSHDriverErrorReadTimeout (-112)
+ *      - PPMACcontrolSSHDriverErrorWriteTimeout (-113)
+ *      - PPMACcontrolSemaphoreTimeoutError = (-239)
+ *      - PPMACcontrolSemaphoreError = (-240)
+ *      - PPMACcontrolSemaphoreReleaseError = (-241)
+ */
+int PowerPMACcontrol::PowerPMACcontrol_getCPUTemperature(double& temperature){
+	//static const char *functionName = "PowerPMACcontrol_getCPUTemperature";
+	static const char *functionName = __FUNCTION__;
+    debugPrint_ppmaccomm("%s called\n", functionName);
+
+    // Send command and read response
+    return this->PowerPMACcontrol_getVariable("Sys.CpuTemp", temperature);
+
+}
+
+/**
+ * @brief Get the time from power-on to present
+ *
+ * Power PMAC command string sent = "Sys.Time"
+ * @param runningTime - The time in seconds since power-on will be written to this parameter.
+ * @return If value is successfully received, PPMACcontrolNoError(0) is returned. If not,
+ * minus value is returned. Possible error codes are :
+ *      - PPMACcontrolNoError(0)
+ *      - PPMACcontrolNoSSHDriverSet (-230)
+ *      - PPMACcontrolSSHDriverError (-102)
+ *      - PPMACcontrolSSHDriverErrorNoconn (-104)
+ *      - PPMACcontrolSSHDriverErrorNobytes (-103)
+ *      - PPMACcontrolSSHDriverErrorReadTimeout (-112)
+ *      - PPMACcontrolSSHDriverErrorWriteTimeout (-113)
+ *      - PPMACcontrolSemaphoreTimeoutError = (-239)
+ *      - PPMACcontrolSemaphoreError = (-240)
+ *      - PPMACcontrolSemaphoreReleaseError = (-241)
+ */
+int PowerPMACcontrol::PowerPMACcontrol_getRunningTime(double& runningTime){
+	static const char *functionName = "PowerPMACcontrol_getRunningTime";
+    debugPrint_ppmaccomm("%s called\n", functionName);
+
+    // Send command and read response
+    return this->PowerPMACcontrol_getVariable("Sys.Time", runningTime);
+
+}
+
+/**
+ * @brief Get CPU usage percentage
+ *
+ * @param CPUUsage - The averaged fraction of available CPU time used by all PMAC tasks in percent will be written to this parameter.
+ * @return If value is successfully received, PPMACcontrolNoError(0) is returned. If not,
+ * minus value is returned. Possible error codes are :
+ *      - PPMACcontrolNoError(0)
+ *      - PPMACcontrolNoSSHDriverSet (-230)
+ *      - PPMACcontrolSSHDriverError (-102)
+ *      - PPMACcontrolSSHDriverErrorNoconn (-104)
+ *      - PPMACcontrolSSHDriverErrorNobytes (-103)
+ *      - PPMACcontrolSSHDriverErrorReadTimeout (-112)
+ *      - PPMACcontrolSSHDriverErrorWriteTimeout (-113)
+ *      - PPMACcontrolSemaphoreTimeoutError = (-239)
+ *      - PPMACcontrolSemaphoreError = (-240)
+ *      - PPMACcontrolSemaphoreReleaseError = (-241)
+ */
+int PowerPMACcontrol::PowerPMACcontrol_getCPUUsage(double& CPUUsage){
+    TaskCalculator tasks(this);
+    CPUUsage = tasks.getCPUUsageByPmacTasks();
+
+    return tasks.getErrorStatus();
+}
+
+/**
+ * @brief Get the percentage of total CPU time used by phase tasks
+ *
+ * @param phaseTaskUsage - The averaged fraction of total CPU time used by phase tasks in percent will be written to this parameter
+ * @return If value is successfully received, PPMACcontrolNoError(0) is returned. If not,
+ * minus value is returned. Possible error codes are :
+ *      - PPMACcontrolNoError(0)
+ *      - PPMACcontrolNoSSHDriverSet (-230)
+ *      - PPMACcontrolSSHDriverError (-102)
+ *      - PPMACcontrolSSHDriverErrorNoconn (-104)
+ *      - PPMACcontrolSSHDriverErrorNobytes (-103)
+ *      - PPMACcontrolSSHDriverErrorReadTimeout (-112)
+ *      - PPMACcontrolSSHDriverErrorWriteTimeout (-113)
+ *      - PPMACcontrolSemaphoreTimeoutError = (-239)
+ *      - PPMACcontrolSemaphoreError = (-240)
+ *      - PPMACcontrolSemaphoreReleaseError = (-241)
+ */
+int PowerPMACcontrol::PowerPMACcontrol_getPhaseTaskUsage(double& phaseTaskUsage){
+	static const char *functionName = "PowerPMACcontrol_getPhaseTime";
+    debugPrint_ppmaccomm("%s called\n", functionName);
+
+    TaskCalculator tasks(this);
+    phaseTaskUsage = tasks.getPhaseTaskUsage();
+
+    return tasks.getErrorStatus();
+
+}
+
+/**
+ * @brief Get the percentage of total CPU time used by servo tasks
+ *
+ * @param servoTaskUsage - The averaged fraction of total CPU time used by servo tasks in percent will be written to this parameter
+ * @return If value is successfully received, PPMACcontrolNoError(0) is returned. If not,
+ * minus value is returned. Possible error codes are :
+ *      - PPMACcontrolNoError(0)
+ *      - PPMACcontrolNoSSHDriverSet (-230)
+ *      - PPMACcontrolSSHDriverError (-102)
+ *      - PPMACcontrolSSHDriverErrorNoconn (-104)
+ *      - PPMACcontrolSSHDriverErrorNobytes (-103)
+ *      - PPMACcontrolSSHDriverErrorReadTimeout (-112)
+ *      - PPMACcontrolSSHDriverErrorWriteTimeout (-113)
+ *      - PPMACcontrolSemaphoreTimeoutError = (-239)
+ *      - PPMACcontrolSemaphoreError = (-240)
+ *      - PPMACcontrolSemaphoreReleaseError = (-241)
+ */
+int PowerPMACcontrol::PowerPMACcontrol_getServoTaskUsage(double& servoTaskUsage){
+	static const char *functionName = "PowerPMACcontrol_getServoTime";
+    debugPrint_ppmaccomm("%s called\n", functionName);
+
+    TaskCalculator tasks(this);
+    servoTaskUsage = tasks.getServoTaskUsage();
+
+    return tasks.getErrorStatus();
+
+}
+
+/**
+ * @brief Get the percentage of total CPU time used by real-time interrupt tasks
+ *
+ * @param rtIntTaskUsage - The averaged fraction of total CPU time used by real-time interrupt tasks in percent will be written to this parameter
+ * @return If value is successfully received, PPMACcontrolNoError(0) is returned. If not,
+ * minus value is returned. Possible error codes are :
+ *      - PPMACcontrolNoError(0)
+ *      - PPMACcontrolNoSSHDriverSet (-230)
+ *      - PPMACcontrolSSHDriverError (-102)
+ *      - PPMACcontrolSSHDriverErrorNoconn (-104)
+ *      - PPMACcontrolSSHDriverErrorNobytes (-103)
+ *      - PPMACcontrolSSHDriverErrorReadTimeout (-112)
+ *      - PPMACcontrolSSHDriverErrorWriteTimeout (-113)
+ *      - PPMACcontrolSemaphoreTimeoutError = (-239)
+ *      - PPMACcontrolSemaphoreError = (-240)
+ *      - PPMACcontrolSemaphoreReleaseError = (-241)
+ */
+int PowerPMACcontrol::PowerPMACcontrol_getRtIntTaskUsage(double& rtIntTaskUsage){
+	static const char *functionName = "PowerPMACcontrol_getRtIntTime";
+    debugPrint_ppmaccomm("%s called\n", functionName);
+
+    TaskCalculator tasks(this);
+    rtIntTaskUsage = tasks.getRtIntTaskUsage();
+
+    return tasks.getErrorStatus();
+}
+
+/**
+ * @brief Get the percentage of total CPU time used by background task scans
+ *
+ * @param bgTaskUsage - The averaged fraction of total CPU time used by background task scans in percent will be written to this parameter
+ * @return If value is successfully received, PPMACcontrolNoError(0) is returned. If not,
+ * minus value is returned. Possible error codes are :
+ *      - PPMACcontrolNoError(0)
+ *      - PPMACcontrolNoSSHDriverSet (-230)
+ *      - PPMACcontrolSSHDriverError (-102)
+ *      - PPMACcontrolSSHDriverErrorNoconn (-104)
+ *      - PPMACcontrolSSHDriverErrorNobytes (-103)
+ *      - PPMACcontrolSSHDriverErrorReadTimeout (-112)
+ *      - PPMACcontrolSSHDriverErrorWriteTimeout (-113)
+ *      - PPMACcontrolSemaphoreTimeoutError = (-239)
+ *      - PPMACcontrolSemaphoreError = (-240)
+ *      - PPMACcontrolSemaphoreReleaseError = (-241)
+ */
+int PowerPMACcontrol::PowerPMACcontrol_getBgTaskUsage(double& bgTaskUsage){
+	static const char *functionName = "PowerPMACcontrol_getBgTime";
+    debugPrint_ppmaccomm("%s called\n", functionName);
+
+    TaskCalculator tasks(this);
+    bgTaskUsage = tasks.getBgTaskUsage();
+
+    return tasks.getErrorStatus();
+}
+/**
+ * @brief Perform calculations for the CPU usage by different PMAC tasks.
+ *
+ * Calculations adapted from source code for Power PMAC IDE Task Manager, provided by Delta Tau
+ *
+ * @param parent_in Pointer to the calling PowerPMACControl class, needed to request the required information from the Power PMAC
+ */
+PowerPMACcontrol::TaskCalculator::TaskCalculator(PowerPMACcontrol * parent_in)
+{
+	myParent = parent_in;
+
+	// Initialise members
+	Sys_FltrPhaseTime = 0;
+	Sys_FltrServoTime = 0;
+	Sys_FltrRtIntTime = 0;
+	Sys_FltrBgTime = 0;
+	Sys_BgSleepTime = 0;
+	Sys_PhaseDeltaTime = 0;
+	Sys_ServoDeltaTime = 0;
+	Sys_RtIntDeltaTime = 0;
+	Sys_BgDeltaTime = 0;
+
+	phaseTaskUsage = 0;
+	servoTaskUsage = 0;
+	rtIntTaskUsage = 0;
+	bgTaskUsage = 0;
+	CPUUsageByPmacTasks = 0;
+
+	errorStatus = 0;
+
+	// Build single request string
+	std::string request_string = "Sys.FltrPhaseTime "
+			"Sys.FltrServoTime "
+			"Sys.FltrRtIntTime "
+			"Sys.FltrBgTime "
+			"Sys.BgSleepTime "
+			"Sys.PhaseDeltaTime "
+			"Sys.ServoDeltaTime "
+			"Sys.RtIntDeltaTime "
+			"Sys.BgDeltaTime\n";
+
+	// Send command and read response
+	std::string reply;
+	errorStatus = myParent->writeRead(request_string.c_str(),reply);
+
+	// Only proceed with calculations if no error
+	if (errorStatus == PPMACcontrolNoError)
+	{
+		std::stringstream extract(reply);
+
+		// Extract responses
+		extract >> Sys_FltrPhaseTime;
+		extract >> Sys_FltrServoTime;
+		extract >> Sys_FltrRtIntTime;
+		extract >> Sys_FltrBgTime;
+		extract >> Sys_BgSleepTime;
+		extract >> Sys_PhaseDeltaTime;
+		extract >> Sys_ServoDeltaTime;
+		extract >> Sys_RtIntDeltaTime;
+		extract >> Sys_BgDeltaTime;
+
+		// Phase task time
+		phaseTaskTime_usec = Sys_FltrPhaseTime;
+
+		// Servo task time
+		servoTaskTime_usec = Sys_FltrServoTime
+				- ( (int) (Sys_FltrServoTime / Sys_PhaseDeltaTime) + 1 ) * phaseTaskTime_usec;
+		if (servoTaskTime_usec > 0.0)
+		{
+			last_positive_servoTaskTime = servoTaskTime_usec;
+		}
+		else
+		{
+			servoTaskTime_usec = last_positive_servoTaskTime;
+		}
+
+		// RT Interrupt Task Time
+		rtIntTaskTime_usec = Sys_FltrRtIntTime
+				- ( (int)(Sys_FltrRtIntTime / Sys_PhaseDeltaTime) + 1 ) * phaseTaskTime_usec
+				- ( (int)(Sys_FltrRtIntTime / Sys_ServoDeltaTime) + 1 ) * servoTaskTime_usec;
+
+		if (rtIntTaskTime_usec > 0.0)
+		{
+			last_positive_rtIntTaskTime = rtIntTaskTime_usec;
+		}
+		else
+		{
+			rtIntTaskTime_usec = last_positive_rtIntTaskTime;
+		}
+
+		// Background Task Time
+		double temp_bgDeltaTime = Sys_FltrBgTime + Sys_FltrRtIntTime;
+		bgTaskTime_usec = temp_bgDeltaTime;
+
+		double difference_bg_rti = ((int)(temp_bgDeltaTime / Sys_RtIntDeltaTime) + 1)
+				* rtIntTaskTime_usec;
+
+		if ( bgTaskTime_usec > difference_bg_rti)
+		{
+			bgTaskTime_usec = bgTaskTime_usec - difference_bg_rti;
+		}
+
+		double difference_bg_servo
+				= ((int)(temp_bgDeltaTime / Sys_ServoDeltaTime) + 1) * servoTaskTime_usec;
+
+		if ( bgTaskTime_usec > difference_bg_servo)
+		{
+			bgTaskTime_usec = bgTaskTime_usec - difference_bg_servo;
+		}
+
+		double difference_bg_phase
+				= ((int)(temp_bgDeltaTime / Sys_PhaseDeltaTime) + 1) * phaseTaskTime_usec;
+
+		if (bgTaskTime_usec > difference_bg_phase)
+		{
+			bgTaskTime_usec = bgTaskTime_usec - difference_bg_phase;
+		}
+
+		// If Sys.BgSleepTime is set to 0, it means use a value of 1000 us.
+		if (Sys_BgSleepTime == 0)
+		{
+			Sys_BgSleepTime = 1000;
+		}
+		double temp_overallTime_usec = Sys_FltrRtIntTime + Sys_FltrBgTime + Sys_BgSleepTime;
+
+		// Phase task usage %
+		phaseTaskUsage
+			= ((int)(temp_overallTime_usec / Sys_PhaseDeltaTime) + 1)
+			* phaseTaskTime_usec / temp_overallTime_usec * 100;
+
+		// Servo task usage %
+		servoTaskUsage
+			= ((int)(temp_overallTime_usec / Sys_ServoDeltaTime) + 1)
+			* servoTaskTime_usec / temp_overallTime_usec * 100;
+
+		// RT interrupt task usage
+		rtIntTaskUsage
+			= ((int)(temp_overallTime_usec / Sys_RtIntDeltaTime) + 1)
+			* rtIntTaskTime_usec / temp_overallTime_usec * 100;
+
+		// Background task usage
+		bgTaskUsage
+			= bgTaskTime_usec / temp_overallTime_usec * 100;
+
+		// Total CPU usage therefore
+		CPUUsageByPmacTasks
+			= phaseTaskUsage + servoTaskUsage + rtIntTaskUsage + bgTaskUsage;
+	}
 }
 
 }

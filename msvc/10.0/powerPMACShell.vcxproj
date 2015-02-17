@@ -54,10 +54,14 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\argParser.cpp" />
     <ClCompile Include="..\..\powerPMACShell.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Release\powerPMACShell.exe" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\argParser.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
