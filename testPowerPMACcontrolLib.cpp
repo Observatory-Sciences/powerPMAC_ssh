@@ -87,6 +87,7 @@ void testController (const char * u_ipaddr, const char * u_user, const char * u_
       cout << "20. getCPUUsage(double&)" << endl;
       cout << "21. getCPUTemperature(double&)" << endl;
       cout << "22. getRunningTime(double&)" << endl;
+      cout << "23. isConnected()" << endl;
       cout << "Please enter your selection (0 to exit) : ";
       
       string str;
@@ -477,6 +478,15 @@ void testController (const char * u_ipaddr, const char * u_user, const char * u_
 					 }
 				  break;
 			  }
+          	case 23:
+          	{
+          		bool status = ppmaccomm->PowerPMACcontrol_isConnected();
+          		if (status == true)
+          			cout << "Connection OK" << endl;
+          		else
+          			cout << "Connection problem" << endl;
+          		break;
+          	}
              default:
              	cout << "Input value '" << str << "' was not recognised as a test case." << endl;
              break;

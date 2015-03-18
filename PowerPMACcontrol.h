@@ -60,6 +60,9 @@ typedef unsigned __int64 uint64_t;
 inline void debugPrint_ppmaccomm(...){}
 #endif
 
+///	 Default timeout for communication functions
+#define DEFAULT_TIMEOUT_MS 1000
+
 namespace PowerPMACcontrol_ns
 {
 
@@ -131,7 +134,7 @@ public:
     
    DLLDECL int PowerPMACcontrol_connect(const char *host, const char *user, const char *pwd, const char *port="22", const bool nominus2 = false);
    DLLDECL int PowerPMACcontrol_disconnect();
-   DLLDECL bool PowerPMACcontrol_isConnected();
+   DLLDECL bool PowerPMACcontrol_isConnected(int timeout = DEFAULT_TIMEOUT_MS);
    DLLDECL int PowerPMACcontrol_sendCommand(const std::string command, std::string& reply);
 
 
@@ -336,11 +339,11 @@ private:
 
     // These methods included in the DLL because they are used in the template methods
     // getVariable and setVarible, which are inserted inline by the compiler where they are used
-    DLLDECL int writeRead(const char *cmd, int timeout = 1000);
-    DLLDECL int writeRead(const char *cmd, std::string& response, int timeout = 1000);
+    DLLDECL int writeRead(const char *cmd, int timeout = DEFAULT_TIMEOUT_MS);
+    DLLDECL int writeRead(const char *cmd, std::string& response, int timeout = DEFAULT_TIMEOUT_MS);
 
 
-    int writeRead_WithoutSemaphore(const char *cmd, std::string& response, int timeout = 1000);
+    int writeRead_WithoutSemaphore(const char *cmd, std::string& response, int timeout = DEFAULT_TIMEOUT_MS);
 
     static const long SEMAPHORE_WAIT_MSEC = 200L;
     static const int MAX_ITEM_NUM = 32;

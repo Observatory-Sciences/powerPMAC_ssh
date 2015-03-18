@@ -1,6 +1,18 @@
 Power PMAC SSH Communications Library Release Notes
 ===================================================
 
+Release 1.2
+===========
+
+Author: Andrew Wilson (OSL)
+Date: March 17th 2015
+Release Type: Minor
+Release Version Number: 1.2
+GitHub repository: https://github.com/aawosl/powerPMAC_ssh
+
+- Update PowerPMACcontrol_isConnected() to check the state of an open connection and 
+  accept an optional timeout argument
+
 Release 1.1
 ===========
 

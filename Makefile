@@ -20,7 +20,7 @@ INSTALL_DIR=/usr/local
 	$(CPP) $(CXXFLAGS) -c $<;
 
 
-all: multi_thread_test powerPMACShell testPowerPMACcontrolLib libPowerPMACcontrol.a libPowerPMACcontrol.so docs
+all: multi_thread_test powerPMACShell testPowerPMACcontrolLib isConnected_test libPowerPMACcontrol.a libPowerPMACcontrol.so docs
 
 libPowerPMACcontrol.a: $(LIB_OBJS)
 	ar rcs libPowerPMACcontrol.a $(LIB_OBJS)
@@ -36,6 +36,9 @@ powerPMACShell: powerPMACShell.o argParser.o libPowerPMACcontrol.a $(LIB_OBJS)
 testPowerPMACcontrolLib: testPowerPMACcontrolLib.o argParser.o libPowerPMACcontrol.a $(LIB_OBJS)
 	$(CPP) testPowerPMACcontrolLib.o argParser.o -o testPowerPMACcontrolLib $(LFLAGS)	
 	
+isConnected_test: isConnected_test.o argParser.o libPowerPMACcontrol.a $(LIB_OBJS)
+	$(CPP) isConnected_test.o argParser.o -o isConnected_test $(LFLAGS)	
+	
 multi_thread_test: multi_thread_test.o libPowerPMACcontrol.a $(LIB_OBJS)
 	$(CPP) multi_thread_test.o -o multi_thread_test $(LFLAGS)
 	
@@ -48,7 +51,7 @@ install: $(wildcard *.h) libPowerPMACcontrol.a libPowerPMACcontrol.so
 	install -D -m 0644  libPowerPMACcontrol.a libPowerPMACcontrol.so $(INSTALL_DIR)/lib
 
 clean:
-	/bin/rm -f *.o *.a *.so core powerPMACShell powerPMACShell2 multi_thread_test testPowerPMACcontrolLib *.zip *.tar.gz
+	/bin/rm -f *.o *.a *.so core powerPMACShell isConnected_test multi_thread_test testPowerPMACcontrolLib *.zip *.tar.gz
 	/bin/rm -rf html
 
 .PHONY: docs

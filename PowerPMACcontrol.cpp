@@ -361,15 +361,43 @@ int PowerPMACcontrol::PowerPMACcontrol_disconnect(){
 }
 
 /**
- * @brief Check if the class already has a SSH connection.
+ * @brief Checks the state of the SSH connection to the Power PMAC.
+ *
+ * If a connection is open, a global status command is sent; the function will check that the command is sent and the reply received successfully.
  * 
- * @return If it already has a SSH connection established, it will return true. Otherwise, false.
+ * @param timeout Connection timeout in milliseconds. Default 1000 ms.
+ * @return Return true if a connection is open and operating normally. Return false if communication fails or times out, or if no connection is open.
  */
-bool PowerPMACcontrol::PowerPMACcontrol_isConnected(){
+bool PowerPMACcontrol::PowerPMACcontrol_isConnected(int timeout){
     if (this->connected > 0)
-        return true;
+    {
+    	// Connection has been opened
+    	// Send a global status command; check for successful send and receive
+    	char cmd[128] = {0};
+		sprintf( cmd, "?\n");
+		std::string reply;
+		int ret = writeRead(cmd, reply, timeout);
+		if (ret != PPMACcontrolNoError)
+		{
+			// Communication error
+			return false;
+		}
+		if (reply.length() != 9)
+		{
+			// Expected reply not received
+			return false;
+		}
+		else
+    	{
+    		// Command send/receive OK
+    		return true;
+    	}
+    }
     else
+    {
+    	// Connection has not been opened
         return false;
+    }
 }
 /**
  * @brief Write data to the connected SSH channel.
