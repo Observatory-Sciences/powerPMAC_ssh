@@ -20,7 +20,7 @@ INSTALL_DIR=/usr/local
 	$(CPP) $(CXXFLAGS) -c $<;
 
 
-all: multi_thread_test powerPMACShell testPowerPMACcontrolLib isConnected_test libPowerPMACcontrol.a libPowerPMACcontrol.so docs
+all: powerPMACShell testPowerPMACcontrolLib libPowerPMACcontrol.a libPowerPMACcontrol.so docs
 
 libPowerPMACcontrol.a: $(LIB_OBJS)
 	ar rcs libPowerPMACcontrol.a $(LIB_OBJS)
@@ -36,11 +36,17 @@ powerPMACShell: powerPMACShell.o argParser.o libPowerPMACcontrol.a $(LIB_OBJS)
 testPowerPMACcontrolLib: testPowerPMACcontrolLib.o argParser.o libPowerPMACcontrol.a $(LIB_OBJS)
 	$(CPP) testPowerPMACcontrolLib.o argParser.o -o testPowerPMACcontrolLib $(LFLAGS)	
 	
-isConnected_test: isConnected_test.o argParser.o libPowerPMACcontrol.a $(LIB_OBJS)
-	$(CPP) isConnected_test.o argParser.o -o isConnected_test $(LFLAGS)	
+timeout_test: $(LIB_OBJS)
+	$(CPP) -c test/timeout_test.cpp $(CXXFLAGS) -std=c++0x -o test/timeout_test.o $(LFLAGS)
+isConnected_test: $(LIB_OBJS)
+	$(CPP) -c test/isConnected_test.cpp $(CXXFLAGS) -o test/isConnected_test.o $(LFLAGS)
+multi_thread_test: $(LIB_OBJS)
+	$(CPP) -c test/multi_thread_test.cpp $(CXXFLAGS) -o test/multi_thread_test.o $(LFLAGS)
 	
-multi_thread_test: multi_thread_test.o libPowerPMACcontrol.a $(LIB_OBJS)
-	$(CPP) multi_thread_test.o -o multi_thread_test $(LFLAGS)
+test: timeout_test isConnected_test multi_thread_test argParser.o $(LIB_OBJS) all
+	$(CPP) test/timeout_test.o argParser.o -o test/timeout_test $(LFLAGS)
+	$(CPP) test/isConnected_test.o argParser.o -o test/isConnected_test $(LFLAGS)
+	$(CPP) test/multi_thread_test.o -o test/multi_thread_test $(LFLAGS)
 	
 release: $(wildcard *.h) $(wildcard *.cpp) Doxyfile
 	zip -r PowerPMACcontrol $(wildcard *.h) $(wildcard *.cpp) Doxyfile libssh2 msvc -x "*/.svn/*"
@@ -51,8 +57,9 @@ install: $(wildcard *.h) libPowerPMACcontrol.a libPowerPMACcontrol.so
 	install -D -m 0644  libPowerPMACcontrol.a libPowerPMACcontrol.so $(INSTALL_DIR)/lib
 
 clean:
-	/bin/rm -f *.o *.a *.so core powerPMACShell isConnected_test multi_thread_test testPowerPMACcontrolLib *.zip *.tar.gz
+	/bin/rm -f *.o *.a *.so core powerPMACShell testPowerPMACcontrolLib *.zip *.tar.gz
 	/bin/rm -rf html
+	/bin/rm -f test/*.o test/isConnected_test test/multi_thread_test test/timeout_test
 
 .PHONY: docs
 docs:

@@ -60,8 +60,13 @@ typedef unsigned __int64 uint64_t;
 inline void debugPrint_ppmaccomm(...){}
 #endif
 
-///	 Default timeout for communication functions
+///	Default timeout for communication functions
 #define DEFAULT_TIMEOUT_MS 1000
+/**
+ * Value which indicates to communication functions that a timeout parameter has not been passed
+ * so that the common value is used instead
+ */
+#define TIMEOUT_NOT_SPECIFIED -1
 
 namespace PowerPMACcontrol_ns
 {
@@ -121,6 +126,9 @@ inline struct timespec getAbsTimeout( long milliseconds)
 #endif
 
 /**
+ * @class PowerPMACcontrol
+ * @brief Main class for the Power PMAC SSH communications library.
+ *
  * The PowerPMACcontrol class manages the communication with the Power PMAC.
  * Setting up a connection can be configured with a host name/IP, 
  * username and optional password.
@@ -134,8 +142,10 @@ public:
     
    DLLDECL int PowerPMACcontrol_connect(const char *host, const char *user, const char *pwd, const char *port="22", const bool nominus2 = false);
    DLLDECL int PowerPMACcontrol_disconnect();
-   DLLDECL bool PowerPMACcontrol_isConnected(int timeout = DEFAULT_TIMEOUT_MS);
+   DLLDECL bool PowerPMACcontrol_isConnected(int timeout = TIMEOUT_NOT_SPECIFIED);
    DLLDECL int PowerPMACcontrol_sendCommand(const std::string command, std::string& reply);
+   DLLDECL int PowerPMACcontrol_getTimeout(int & timeout_ms);
+   DLLDECL int PowerPMACcontrol_setTimeout(int timeout_ms);
 
 
     //PowerPMAC Controller oriented functions
@@ -331,6 +341,8 @@ private:
     SSHDriver *sshdriver;
     int connected;
 
+    int common_timeout_ms;
+
     static int splitit(std::string s, std::string separator, std::vector<std::string> &strings);
     static int check_PowerPMAC_error(const std::string s);
     
@@ -339,11 +351,11 @@ private:
 
     // These methods included in the DLL because they are used in the template methods
     // getVariable and setVarible, which are inserted inline by the compiler where they are used
-    DLLDECL int writeRead(const char *cmd, int timeout = DEFAULT_TIMEOUT_MS);
-    DLLDECL int writeRead(const char *cmd, std::string& response, int timeout = DEFAULT_TIMEOUT_MS);
+    DLLDECL int writeRead(const char *cmd, int timeout = TIMEOUT_NOT_SPECIFIED);
+    DLLDECL int writeRead(const char *cmd, std::string& response, int timeout = TIMEOUT_NOT_SPECIFIED);
 
 
-    int writeRead_WithoutSemaphore(const char *cmd, std::string& response, int timeout = DEFAULT_TIMEOUT_MS);
+    int writeRead_WithoutSemaphore(const char *cmd, std::string& response, int timeout = TIMEOUT_NOT_SPECIFIED);
 
     static const long SEMAPHORE_WAIT_MSEC = 200L;
     static const int MAX_ITEM_NUM = 32;

@@ -1,6 +1,19 @@
 Power PMAC SSH Communications Library Release Notes
 ===================================================
 
+Release 1.3
+===========
+
+Author: Andrew Wilson (OSL)
+Date: March 31st 2015
+Release Type: Minor
+Release Version Number: 1.3
+GitHub repository: https://github.com/Observatory-Sciences/powerPMAC_ssh
+
+- Add functions PowerPMACcontrol_getTimeout() and PowerPMACcontrol_setTimeout() to 
+  control the length of the communications timeout for all library functions.
+
+
 Release 1.2
 ===========
 

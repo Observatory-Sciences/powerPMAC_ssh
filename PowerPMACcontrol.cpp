@@ -64,6 +64,10 @@ PowerPMACcontrol::PowerPMACcontrol(){
     
     sshdriver = NULL;
     connected = 0;
+
+    // Initialise the timeout
+    common_timeout_ms = DEFAULT_TIMEOUT_MS;
+
 #ifdef WIN32    
 	ghSemaphore = CreateSemaphore(
 		NULL,
@@ -365,11 +369,17 @@ int PowerPMACcontrol::PowerPMACcontrol_disconnect(){
  *
  * If a connection is open, a global status command is sent; the function will check that the command is sent and the reply received successfully.
  * 
- * @param timeout Connection timeout in milliseconds. Default 1000 ms.
+ * @param timeout Connection timeout in milliseconds. If not specified, the common timeout is used: default 1000 ms; this can be updated using PowerPMACcontrol_setTimeout.
  * @return Return true if a connection is open and operating normally. Return false if communication fails or times out, or if no connection is open.
  */
 bool PowerPMACcontrol::PowerPMACcontrol_isConnected(int timeout){
-    if (this->connected > 0)
+    // If no timeout specified, use the common value
+    if (timeout == TIMEOUT_NOT_SPECIFIED)
+    {
+    	timeout = common_timeout_ms;
+    }
+
+	if (this->connected > 0)
     {
     	// Connection has been opened
     	// Send a global status command; check for successful send and receive
@@ -398,6 +408,34 @@ bool PowerPMACcontrol::PowerPMACcontrol_isConnected(int timeout){
     	// Connection has not been opened
         return false;
     }
+}
+/**
+ * @brief Return the length of the communications timeout used for all functions
+ * @param timeout_ms Variable to receive the timeout in milliseconds
+ * @return Always returns PPMACcontrolNoError(0) because no communication occurs in this function
+ */
+int PowerPMACcontrol::PowerPMACcontrol_getTimeout(int & timeout_ms){
+	timeout_ms = common_timeout_ms;
+	return PPMACcontrolNoError;
+}
+/**
+ * @brief Set the length of the communications timeout used for all functions
+ * @param timeout_ms Timeout in milliseconds
+ * @return If successful, PPMACcontrolNoError (0) is returned.
+ * If an invalid timeout value is entered, PPMACcontrolInvalidParamError (-242) is returned.
+ */
+int PowerPMACcontrol::PowerPMACcontrol_setTimeout(int timeout_ms){
+	// Check validity of supplied value
+	if (timeout_ms > 0){
+		common_timeout_ms = timeout_ms;
+		return PPMACcontrolNoError;
+	}
+	else
+	{
+		// Return error code to indicate invalid timeout parameter supplied
+		return PPMACcontrolInvalidParamError;
+	}
+
 }
 /**
  * @brief Write data to the connected SSH channel.
@@ -2337,7 +2375,7 @@ int PowerPMACcontrol::PowerPMACcontrol_progDownload(std::string filepath){
  * A timeout should be specified in milliseconds.
  * @param cmd - The string buffer to be written.
  * @param response - The response read from the SSH channel
- * @param timeout - A timeout in ms for the write. The default value is 1000.
+ * @param timeout - A timeout in ms for the write. The default value is 1000 and may be updated using PowerPMACcontrol_setTimeout.
  * @return If successful, PPMACcontrolNoError(0) is returned. If not, 
  * minus value is returned. Possible error codes are :
  *      - PPMACcontrolNoError(0)
@@ -2357,6 +2395,12 @@ int PowerPMACcontrol::writeRead_WithoutSemaphore(const char *cmd, std::string& r
         debugPrint_ppmaccomm("%s : PMAC is not connected", functionName);
         return PPMACcontrolNoSSHDriverSet;
     }
+    // If no timeout specified, use the common value
+    if (timeout == TIMEOUT_NOT_SPECIFIED)
+    {
+    	timeout = common_timeout_ms;
+    }
+
     size_t bytes = 0;
 	int return_num = PPMACcontrolNoError;
 	char buff[5120] = "";
@@ -2396,7 +2440,7 @@ int PowerPMACcontrol::writeRead_WithoutSemaphore(const char *cmd, std::string& r
  * A timeout should be specified in milliseconds.
  * @param cmd - The string buffer to be written.
  * @param response - The response read from the SSH channel
- * @param timeout - A timeout in ms for the write. The default value is 1000.
+ * @param timeout - A timeout in ms for the write. The default value is 1000 and may be updated using PowerPMACcontrol_setTimeout.
  * @return If successful, PPMACcontrolNoError(0) is returned. If not, 
  * minus value is returned. Possible error codes are :
  *      - PPMACcontrolNoError(0)
@@ -2419,6 +2463,12 @@ int PowerPMACcontrol::writeRead(const char *cmd, std::string& response, int time
         debugPrint_ppmaccomm("%s : PMAC is not connected", functionName);
         return PPMACcontrolNoSSHDriverSet;
     }
+    // If no timeout specified, use the common value
+    if (timeout == TIMEOUT_NOT_SPECIFIED)
+    {
+    	timeout = common_timeout_ms;
+    }
+
     size_t bytes = 0;
     
     //Get semaphore
@@ -2522,7 +2572,7 @@ int PowerPMACcontrol::writeRead(const char *cmd, std::string& response, int time
  * 
  * A timeout should be specified in milliseconds.
  * @param cmd - The string buffer to be written.
- * @param timeout - A timeout in ms for the write. The default value is 1000.
+ * @param timeout - A timeout in ms for the write. The default value is 1000 and may be updated using PowerPMACcontrol_setTimeout.
  * @return If successful, PPMACcontrolNoError(0) is returned. If not, 
  * minus value is returned. Possible error codes are :
  *      - PPMACcontrolNoError(0)
@@ -2540,6 +2590,11 @@ int PowerPMACcontrol::writeRead(const char *cmd, std::string& response, int time
 int PowerPMACcontrol::writeRead(const char *cmd, int timeout){
     static const char *functionName = "PowerPMACcontrol::writeRead(char*, int)";
     debugPrint_ppmaccomm("%s called", functionName);
+    // If no timeout specified, use the common value
+    if (timeout == TIMEOUT_NOT_SPECIFIED)
+    {
+    	timeout = common_timeout_ms;
+    }
     std::string reply = "";
     return this->writeRead(cmd, reply, timeout);
 }
@@ -2579,7 +2634,7 @@ int PowerPMACcontrol::PowerPMACcontrol_sendCommand(const std::string command, st
         {
             cmd = cmd + "\n";//Add the new line
         }
-        return this->writeRead(cmd.c_str(), reply, 1000);
+        return this->writeRead(cmd.c_str(), reply);
     }
     else    //Don't send a command of 0 length. Return no error.
         return PPMACcontrolNoError;
