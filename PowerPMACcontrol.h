@@ -372,7 +372,7 @@ private:
     }
     inline static int buildSendBuffer(char * buffer, std::string name, double value)
     {
-    	return sprintf( buffer, "%s=%f\n", name.c_str(), value);
+    	return sprintf( buffer, "%s=%.12g\n", name.c_str(), value);
     }
     inline static int buildSendBuffer(char * buffer, std::string name, int value)
     {
